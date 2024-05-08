@@ -19,7 +19,7 @@ namespace PuzzleGame
     public partial class MainWindow : Window
     {
         int[,] correctMatrix, matrix;
-        int[] ints;
+        int tileUsed;
         int size;
         public MainWindow()
         {
@@ -37,11 +37,9 @@ namespace PuzzleGame
             comboBox.SelectedIndex = 0;
         }
 
-        public void GenerateMatrixes()
+        public void GenerateCorrectMatrix(int size)
         {
-            size = Convert.ToInt32(comboBox.SelectedItem);
             correctMatrix = new int[size, size];
-            matrix = new int[size, size];
 
             int correctMatrixValue = 1;
             for (int i = 0; i < size; i++)
@@ -53,22 +51,38 @@ namespace PuzzleGame
 
                 }
             }
-            correctMatrix[size-1, size-1] = -1;
-            matrix = correctMatrix;
-            int[] result = matrix.Cast<int>().Select(x => x).ToArray();
-            Random r = new();
-            r.Shuffle(result);
-            ConvertTo2dArray(result);
-            ShowMatrix();
+            correctMatrix[size - 1, size - 1] = -1;
+
         }
 
-        public void ConvertTo2dArray(int[] result)
+        public void GenerateRandomMatrix(int size)
+        {
+            matrix = new int[size, size];
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    matrix[i, j] = correctMatrix[i, j];
+                }
+            } 
+            Random r = new();
+            int[] array = ConvertTo1dArray(matrix);
+            r.Shuffle(array);
+            ConvertTo2dArray(array);
+        }
+
+        public int[] ConvertTo1dArray(int[,] _matrix)
+        {
+            return _matrix.Cast<int>().Select(x => x).ToArray();
+        }
+
+        public void ConvertTo2dArray(int[] array)
         {
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
                 {
-                    matrix[i, j] = result[i * size + j];
+                    matrix[i, j] = array[i * size + j];
                 }
             }
         }
@@ -94,7 +108,8 @@ namespace PuzzleGame
                     {
                         continue;
                     }
-                    else {
+                    else
+                    {
                         Button b = new();
 
                         Grid.SetRow(b, i);
@@ -112,12 +127,13 @@ namespace PuzzleGame
             Button b = sender as Button;
             int row = Grid.GetRow(b);
             int column = Grid.GetColumn(b);
-            if (!IsOutofBorder(row - 1, column) )
+            if (!IsOutofBorder(row - 1, column))
             {
                 if (matrix[row - 1, column] == -1)
                 {
                     matrix[row - 1, column] = matrix[row, column];
                     matrix[row, column] = -1;
+                    TileUsed();
                 }
             }
             if (!IsOutofBorder(row + 1, column))
@@ -126,14 +142,16 @@ namespace PuzzleGame
                 {
                     matrix[row + 1, column] = matrix[row, column];
                     matrix[row, column] = -1;
+                    TileUsed();
                 }
             }
             if (!IsOutofBorder(row, column - 1))
             {
                 if (matrix[row, column - 1] == -1)
-                { 
+                {
                     matrix[row, column - 1] = matrix[row, column];
                     matrix[row, column] = -1;
+                    TileUsed();
                 }
             }
             if (!IsOutofBorder(row, column + 1))
@@ -142,10 +160,15 @@ namespace PuzzleGame
                 {
                     matrix[row, column + 1] = matrix[row, column];
                     matrix[row, column] = -1;
+                    TileUsed();
                 }
             }
             ShowMatrix();
-            CheckIfPuzzleFinished();
+
+            if (IsPuzzleCorrect())
+            {
+                MessageBoxResult message = MessageBox.Show($"You have completed the puzzle using {tileUsed} moves");
+            }
 
         }
         private bool IsOutofBorder(int row, int column)
@@ -153,14 +176,33 @@ namespace PuzzleGame
             return row < 0 || column < 0 || row >= size || column >= size;
         }
 
-        private void CheckIfPuzzleFinished()
+        private bool IsPuzzleCorrect()
         {
-            //TODO
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    if(matrix[i, j] != correctMatrix[i, j])
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        public void TileUsed()
+        {
+            tileUsed++;
         }
 
         private void Generate_Click(object sender, RoutedEventArgs e)
         {
-            GenerateMatrixes();
+            size = Convert.ToInt32(comboBox.SelectedItem);
+            GenerateCorrectMatrix(size);
+            GenerateRandomMatrix(size);
+            tileUsed = 0;
+            ShowMatrix();
         }
     }
 }
+
+
